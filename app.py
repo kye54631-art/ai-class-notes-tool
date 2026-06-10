@@ -352,5 +352,6 @@ if __name__ == '__main__':
     print('=' * 50)
     # Railway 部署时使用 PORT 环境变量，本地默认为 5000
     port = int(os.environ.get('PORT', 5000))
-    host = os.environ.get('HOST', '127.0.0.1')
+    # Railway: 必须绑定 0.0.0.0，否则外部代理无法访问
+    host = os.environ.get('HOST', '0.0.0.0')
     app.run(debug=False, host=host, port=port)
