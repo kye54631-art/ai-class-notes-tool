@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>历史笔记 - AI课堂笔记整理工具</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <style>
+        .search-bar {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1.5rem;
+        }
+        .search-bar input {
+            flex: 1;
+        }
+        .note-row {
+            cursor: pointer;
+        }
+        .note-row td:last-child {
+            white-space: nowrap;
+        }
+        .empty-icon { font-size: 4rem; }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <a href="/" class="navbar-brand">
+            <span class="icon">📝</span>
+            <span>AI课堂笔记</span>
+        </a>
+        <ul class="navbar-nav">
+            <li><a href="/">🏠 首页</a></li>
+            <li><a href="/history" class="active">📚 历史笔记</a></li>
+            <li><a href="/settings">⚙️ 设置</a></li>
+        </ul>
+    </nav>
+
+    <div class="container">
+        <div class="page-header">
+            <h1>📚 历史笔记</h1>
+            <p>查看和管理您之前整理的所有课堂笔记</p>
+        </div>
+
+        <div class="card">
+            <div class="search-bar">
+                <input type="text" class="form-control" id="searchInput" placeholder="🔍 搜索笔记标题或标签..."
+                       onkeyup="if(event.key==='Enter') searchNotes()">
+                <button class="btn btn-primary" onclick="searchNotes()">搜索</button>
+            </div>
+
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>标题</th>
+                            <th>标签</th>
+                            <th>创建时间</th>
+                            <th>更新时间</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="notesTableBody">
+                        <tr>
+                            <td colspan="5">
+                                <div class="empty-state">
+                                    <div class="icon">📖</div>
+                                    <p>加载中...</p>
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="pagination" id="pagination"></div>
+        </div>
+    </div>
+
+    <script src="/static/js/main.js"></script>
+    <script>
+        // 历史记录页逻辑
+        let currentPage = 1;
+
+        function loadNotes(page = 1) {
+            currentPage = page;
+            const keyword = document.getElementById('searchInput').value;
+
+            fetch(`/api/notes?page=${page}&keyword=${encodeURIComponent(keyword)}`)
+                .then(r => r.json())
+                .then(data => {
+                    if (!data.success) { alert(data.error); return; }
+
+                    const tbody = document.getElementById('notesTableBody');
+                    if (!data.notes || data.notes.length === 0) {
+                        tbody.innerHTML = `<tr><td colspan="5">
+                            <div class="empty-state">
+                                <div class="icon empty-icon">📭</div>
+                                <p>还没有任何笔记</p>
+                                <a href="/" class="btn btn-primary" style="margin-top: 1rem;">去创建笔记</a>
+                            </div>
+                        </td></tr>`;
+                    } else {
+                        tbody.innerHTML = data.notes.map(n => `
+                            <tr class="note-row" ondblclick="openNote(${n.id})">
+                                <td><strong>${escHtml(n.title)}</strong></td>
+                                <td>${(n.tags || '').split(',').filter(Boolean).map(t => `<span class="badge">${escHtml(t)}</span>`).join(' ')}</td>
+                                <td style="font-size:0.85rem;">${n.created_at_formatted}</td>
+                                <td style="font-size:0.85rem;">${n.updated_at_formatted}</td>
+                                <td>
+                                    <div class="btn-group">
+                                        <button class="btn btn-outline btn-sm" onclick="openNote(${n.id})">✏️ 编辑</button>
+                                        <button class="btn btn-outline btn-sm" onclick="quickExport(${n.id})">📥 导出</button>
+                                        <button class="btn btn-danger btn-sm" onclick="deleteNote(${n.id})">🗑️</button>
+                                    </div>
+                                </td>
+                            </tr>
+                        `).join('');
+                    }
+
+                    // 分页
+                    renderPagination(data);
+                })
+                .catch(err => {
+                    document.getElementById('notesTableBody').innerHTML =
+                        `<tr><td colspan="5"><div class="empty-state"><p>加载失败: ${err.message}</p></div></td></tr>`;
+                });
+        }
+
+        function renderPagination(data) {
+            const pag = document.getElementById('pagination');
+            if (data.total_pages <= 1) { pag.innerHTML = ''; return; }
+            let html = '';
+            for (let i = 1; i <= data.total_pages; i++) {
+                html += `<button class="${i === data.page ? 'active' : ''}" onclick="loadNotes(${i})">${i}</button>`;
+            }
+            pag.innerHTML = html;
+        }
+
+        function searchNotes() {
+            loadNotes(1);
+        }
+
+        function openNote(id) {
+            window.location.href = '/editor/' + id;
+        }
+
+        function deleteNote(id) {
+            if (!confirm('确定要删除这条笔记吗？此操作不可撤销。')) return;
+
+            fetch(`/api/notes/${id}`, { method: 'DELETE' })
+                .then(r => r.json())
+                .then(data => {
+                    if (data.success) {
+                        showMessage('笔记已删除', 'success');
+                        loadNotes(currentPage);
+                    } else {
+                        alert('删除失败: ' + data.error);
+                    }
+                });
+        }
+
+        function quickExport(id) {
+            window.open('/api/export/' + id + '/word', '_blank');
+        }
+
+        function escHtml(str) {
+            const div = document.createElement('div');
+            div.textContent = str;
+            return div.innerHTML;
+        }
+
+        function showMessage(msg, type) {
+            const area = document.createElement('div');
+            area.className = 'alert alert-' + type;
+            area.textContent = msg;
+            area.style.position = 'fixed';
+            area.style.top = '80px';
+            area.style.right = '20px';
+            area.style.zIndex = '9999';
+            document.body.appendChild(area);
+            setTimeout(() => area.remove(), 3000);
+        }
+
+        // 初始加载
+        loadNotes();
+    </script>
+</body>
+</html>

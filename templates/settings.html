@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>设置 - AI课堂笔记整理工具</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <style>
+        .settings-section {
+            margin-bottom: 2rem;
+        }
+        .settings-section h2 {
+            font-size: 1.2rem;
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid var(--border);
+        }
+        .setting-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.75rem 0;
+            border-bottom: 1px solid #f1f5f9;
+        }
+        .setting-item label {
+            font-weight: 500;
+            font-size: 0.9rem;
+        }
+        .setting-item .desc {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            display: block;
+            margin-top: 0.15rem;
+        }
+        .setting-item input,
+        .setting-item select {
+            width: 300px;
+            margin-left: 1rem;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <a href="/" class="navbar-brand">
+            <span class="icon">📝</span>
+            <span>AI课堂笔记</span>
+        </a>
+        <ul class="navbar-nav">
+            <li><a href="/">🏠 首页</a></li>
+            <li><a href="/history">📚 历史笔记</a></li>
+            <li><a href="/settings" class="active">⚙️ 设置</a></li>
+        </ul>
+    </nav>
+
+    <div class="container">
+        <div class="page-header">
+            <h1>⚙️ 设置</h1>
+            <p>配置 API 密钥和默认选项</p>
+        </div>
+
+        <div class="card settings-section">
+            <h2>🎤 百度语音识别 API</h2>
+            <p style="color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 1rem;">
+                购买地址：<a href="https://console.bce.baidu.com/ai/#/ai/speech/overview/index" target="_blank">百度智能云语音识别</a>
+                &nbsp;|&nbsp;文档：<a href="https://ai.baidu.com/ai-doc/SPEECH/Vk38lxg5x" target="_blank">开发文档</a>
+            </p>
+            <div class="setting-item">
+                <div>
+                    <label>App ID</label>
+                    <span class="desc">百度智能云应用的 App ID</span>
+                </div>
+                <input type="text" class="form-control" id="baiduAppId" placeholder="请输入 App ID">
+            </div>
+            <div class="setting-item">
+                <div>
+                    <label>API Key</label>
+                    <span class="desc">百度智能云语音识别 API Key</span>
+                </div>
+                <input type="text" class="form-control" id="baiduApiKey" placeholder="请输入 API Key">
+            </div>
+            <div class="setting-item">
+                <div>
+                    <label>Secret Key</label>
+                    <span class="desc">百度智能云语音识别 Secret Key</span>
+                </div>
+                <input type="password" class="form-control" id="baiduSecretKey" placeholder="请输入 Secret Key">
+            </div>
+        </div>
+
+        <div class="card settings-section">
+            <h2>🤖 DeepSeek AI API</h2>
+            <p style="color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 1rem;">
+                API密钥获取：<a href="https://platform.deepseek.com/api_keys" target="_blank">DeepSeek 开放平台</a>
+                &nbsp;|&nbsp;文档：<a href="https://platform.deepseek.com/api-docs/" target="_blank">API 文档</a>
+            </p>
+            <div class="setting-item">
+                <div>
+                    <label>API Key</label>
+                    <span class="desc">DeepSeek 开放平台 API 密钥</span>
+                </div>
+                <input type="password" class="form-control" id="deepseekApiKey" placeholder="请输入 DeepSeek API Key">
+            </div>
+        </div>
+
+        <div class="card settings-section">
+            <h2>📋 默认设置</h2>
+            <div class="setting-item">
+                <div>
+                    <label>默认导出格式</label>
+                    <span class="desc">导出笔记时默认使用的文件格式</span>
+                </div>
+                <select class="form-control" id="defaultExportFormat">
+                    <option value="word">Word (.docx)</option>
+                    <option value="txt">纯文本 (.txt)</option>
+                    <option value="pdf">PDF (.pdf)</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="btn-group" style="justify-content: flex-end;">
+            <button class="btn btn-outline" onclick="loadSettings()">🔄 重置</button>
+            <button class="btn btn-primary btn-lg" onclick="saveSettings()">💾 保存设置</button>
+        </div>
+
+        <div id="messageArea" style="margin-top: 1rem;"></div>
+    </div>
+
+    <script>
+        // 设置页逻辑
+        function loadSettings() {
+            fetch('/api/settings')
+                .then(r => r.json())
+                .then(data => {
+                    if (!data.success) return;
+                    const s = data.settings;
+                    document.getElementById('baiduAppId').value = s.baidu_app_id || '';
+                    document.getElementById('baiduApiKey').value = s.baidu_api_key || '';
+                    document.getElementById('baiduSecretKey').value = s.baidu_secret_key || '';
+                    document.getElementById('deepseekApiKey').value = s.deepseek_api_key || '';
+                    document.getElementById('defaultExportFormat').value = s.default_export_format || 'word';
+                });
+        }
+
+        function saveSettings() {
+            const settings = {
+                baidu_app_id: document.getElementById('baiduAppId').value.trim(),
+                baidu_api_key: document.getElementById('baiduApiKey').value.trim(),
+                deepseek_api_key: document.getElementById('deepseekApiKey').value.trim(),
+                default_export_format: document.getElementById('defaultExportFormat').value
+            };
+
+            const secretKey = document.getElementById('baiduSecretKey').value.trim();
+            if (secretKey) {
+                settings.baidu_secret_key = secretKey;
+            }
+
+            fetch('/api/settings', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(settings)
+            })
+            .then(r => r.json())
+            .then(data => {
+                const area = document.getElementById('messageArea');
+                if (data.success) {
+                    area.innerHTML = '<div class="alert alert-success">✅ 设置已保存成功！</div>';
+                } else {
+                    area.innerHTML = '<div class="alert alert-error">❌ 保存失败</div>';
+                }
+                setTimeout(() => area.innerHTML = '', 3000);
+            });
+        }
+
+        // 初始加载
+        loadSettings();
+    </script>
+</body>
+</html>

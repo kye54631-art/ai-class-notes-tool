@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI课堂笔记整理工具</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <style>
+        /* 首页特有样式 */
+        .hero {
+            text-align: center;
+            padding: 3rem 2rem;
+        }
+        .hero h1 {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+        }
+        .hero p {
+            color: var(--text-secondary);
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-top: 2rem;
+        }
+        .feature-card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 1.5rem;
+            text-align: center;
+            transition: box-shadow 0.2s;
+        }
+        .feature-card:hover {
+            box-shadow: var(--shadow-md);
+        }
+        .feature-card .icon {
+            font-size: 2.5rem;
+            margin-bottom: 0.75rem;
+        }
+        .feature-card h3 {
+            font-size: 1.05rem;
+            margin-bottom: 0.5rem;
+        }
+        .feature-card p {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+        .tab-buttons {
+            display: flex;
+            gap: 0;
+            margin-bottom: 1.5rem;
+            border-bottom: 2px solid var(--border);
+        }
+        .tab-btn {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            background: none;
+            cursor: pointer;
+            font-size: 0.95rem;
+            color: var(--text-secondary);
+            border-bottom: 2px solid transparent;
+            margin-bottom: -2px;
+            transition: all 0.2s;
+        }
+        .tab-btn.active {
+            color: var(--primary);
+            border-bottom-color: var(--primary);
+        }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+
+        .result-box {
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            padding: 1rem;
+            max-height: 400px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            font-size: 0.9rem;
+            line-height: 1.7;
+            min-height: 150px;
+        }
+    </style>
+</head>
+<body>
+    <!-- 导航栏 -->
+    <nav class="navbar">
+        <a href="/" class="navbar-brand">
+            <span class="icon">📝</span>
+            <span>AI课堂笔记</span>
+        </a>
+        <ul class="navbar-nav">
+            <li><a href="/" class="active">🏠 首页</a></li>
+            <li><a href="/history">📚 历史笔记</a></li>
+            <li><a href="/settings">⚙️ 设置</a></li>
+        </ul>
+    </nav>
+
+    <div class="container">
+        <!-- Hero 区 -->
+        <div class="hero">
+            <h1>🎓 AI课堂笔记整理工具</h1>
+            <p>语音转文字 + AI智能分析，一键生成结构化课堂笔记，让学习更高效</p>
+        </div>
+
+        <!-- 功能标签 -->
+        <div class="tab-buttons">
+            <button class="tab-btn active" onclick="switchTab('record')">🎤 录音转文字</button>
+            <button class="tab-btn" onclick="switchTab('upload')">📁 上传音频</button>
+            <button class="tab-btn" onclick="switchTab('paste')">📋 粘贴文本</button>
+        </div>
+
+        <!-- ===== 录音标签 ===== -->
+        <div id="tab-record" class="tab-content active">
+            <div class="card">
+                <div class="recorder-section">
+                    <button id="recordBtn" class="record-btn" onclick="toggleRecording()" title="开始录音">
+                        🎤
+                    </button>
+                    <div class="recording-status">
+                        <div class="time" id="recordTime">00:00</div>
+                        <p id="recordHint">点击按钮开始录音</p>
+                    </div>
+                    <div class="btn-group" style="justify-content: center; margin-top: 1rem;">
+                        <button id="recognizeRecordBtn" class="btn btn-primary" onclick="recognizeRecording()" disabled>
+                            🔍 识别录音内容
+                        </button>
+                        <button id="analyzeRecordBtn" class="btn btn-success" onclick="analyzeRecording()" disabled style="display:none;">
+                            🤖 AI分析生成笔记
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div class="card" id="recordResultCard" style="display:none;">
+                <div class="card-header">📝 识别结果</div>
+                <div class="result-box" id="recordResult"></div>
+            </div>
+        </div>
+
+        <!-- ===== 上传标签 ===== -->
+        <div id="tab-upload" class="tab-content">
+            <div class="card">
+                <div class="upload-zone" id="uploadZone" onclick="document.getElementById('audioFile').click()">
+                    <div class="upload-icon">📂</div>
+                    <p>点击或拖拽上传音频文件</p>
+                    <p class="hint">支持 mp3, wav, m4a, flac, aac 等格式 · 最大100MB</p>
+                </div>
+                <input type="file" id="audioFile" accept="audio/*" style="display:none" onchange="handleFileSelect(event)">
+                <div id="uploadFileName" style="margin-top: 0.75rem; text-align: center;"></div>
+
+                <div class="btn-group" style="justify-content: center; margin-top: 1rem;">
+                    <button id="recognizeUploadBtn" class="btn btn-primary" onclick="recognizeUpload()" disabled>
+                        🔍 开始识别
+                    </button>
+                    <button id="analyzeUploadBtn" class="btn btn-success" onclick="analyzeUpload()" disabled style="display:none;">
+                        🤖 AI分析生成笔记
+                    </button>
+                </div>
+            </div>
+            <div class="card" id="uploadResultCard" style="display:none;">
+                <div class="card-header">📝 识别结果</div>
+                <div class="result-box" id="uploadResult"></div>
+            </div>
+        </div>
+
+        <!-- ===== 粘贴文本标签 ===== -->
+        <div id="tab-paste" class="tab-content">
+            <div class="card">
+                <div class="form-group">
+                    <label class="form-label">📝 粘贴课堂文本内容</label>
+                    <textarea class="form-control" id="pasteText" rows="8" placeholder="在此粘贴课堂录音转录文本，或直接输入课堂笔记内容..."></textarea>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">分析类型</label>
+                    <select class="form-control" id="analysisType" style="width: auto;">
+                        <option value="full">📊 全面分析（生成完整笔记）</option>
+                        <option value="summary">📃 仅摘要</option>
+                        <option value="keypoints">🔑 仅要点提取</option>
+                        <option value="outline">📋 仅大纲</option>
+                    </select>
+                </div>
+                <button class="btn btn-success btn-lg" onclick="analyzePastedText()" id="analyzePasteBtn">
+                    🤖 AI 智能分析生成笔记
+                </button>
+            </div>
+            <div class="card" id="pasteResultCard" style="display:none;">
+                <div class="card-header" style="display:flex; justify-content: space-between; align-items: center;">
+                    <span>📊 AI分析结果</span>
+                    <div class="btn-group">
+                        <button class="btn btn-primary btn-sm" onclick="openInEditor()">✏️ 在编辑器中打开</button>
+                        <button class="btn btn-outline btn-sm" onclick="saveAndGoHistory()">💾 保存笔记</button>
+                    </div>
+                </div>
+                <div class="keywords-list" id="keywordsSection" style="display:none;">
+                    <span style="font-weight:600; font-size:0.85rem;">🏷️ 关键词：</span>
+                    <span id="keywordsTags"></span>
+                </div>
+                <div class="preview-content" id="pasteResult"></div>
+                <input type="hidden" id="lastOriginalText">
+            </div>
+        </div>
+
+        <!-- 功能特性 -->
+        <div class="feature-grid">
+            <div class="feature-card">
+                <div class="icon">🎤</div>
+                <h3>语音转文字</h3>
+                <p>支持实时录音和文件上传，百度AI高精度识别</p>
+            </div>
+            <div class="feature-card">
+                <div class="icon">🧠</div>
+                <h3>AI智能分析</h3>
+                <p>DeepSeek大模型提取重点、关键词，生成结构化笔记</p>
+            </div>
+            <div class="feature-card">
+                <div class="icon">📊</div>
+                <h3>结构化展示</h3>
+                <p>大纲/标题/要点层级呈现，便于复习与记忆</p>
+            </div>
+            <div class="feature-card">
+                <div class="icon">💾</div>
+                <h3>多格式导出</h3>
+                <p>支持导出为Word、PDF、TXT等多种文档格式</p>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/js/main.js"></script>
+    <script src="/static/js/recorder.js"></script>
+</body>
+</html>

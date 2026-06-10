@@ -1,0 +1,43 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+dist/
+build/
+
+# Virtual environment
+.venv/
+venv/
+env/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Deployment temp files
+cloudflared.exe
+cf_old.exe
+run_tunnel.bat
+start_tunnel.bat
+tunnel_*.txt
+
+# Uploaded audio (temp files)
+static/uploads/*.mp3
+static/uploads/*.wav
+static/uploads/*.m4a
+static/uploads/*.flac
+static/uploads/*.pcm
+
+# Database (optional — Railway uses its own, but keep schema)
+# database/notes.db
+
+# Sensitive config
+*.env
+.env.*
